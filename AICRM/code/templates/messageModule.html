@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+  <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="./static/css/web.css">
+    <title>AICRM</title>
+  </head>
+
+<body>
+<ul class="topbar" style="margin: 0;padding: 0;">
+  <li class="topbar"><a class="active">AICRM</a></li>
+      {% if 'logged_in' in session and session['logged_in'] %}
+        <li class="topbar" style="float:right"><a href="/logout">Logout</a></li>
+      {% else %}
+        <li class="topbar" style="float:right"><a onclick="ts('#login').modal('show')">Login</a></li>
+<!-- <li class="topbar" style="float:right"><a onclick="ts('#signup').modal('show')">SignUp</a></li> -->
+
+      {% endif %}
+</ul>
+
+<ul class="leftbar"  style="margin: 0;padding: 0;">
+{% if 'logged_in' in session and session['logged_in'] %}
+  <li class="leftbar"><a href="/uploadExcel">上傳訂單資料</a></li>
+  <li class="leftbar"><a href="/newmodule">轉換模組</a></li>
+  <li class="leftbar"><a href="/index">篩選</a></li>
+  <li class="leftbar"><a href="/allModule">篩選結果名單</a></li>
+  <li class="leftbar"><a class="active" href="/messageModule">簡訊模組</a></li>
+  <li class="leftbar"><a href="/allMessageFile">簡訊名單</a></li>
+ <li class="leftbar"><a href="/AIfilter">AI篩選</a></li>
+ <li class="leftbar"><a href="/allAIfilter">AI篩選名單</a></li>
+   {% else %}
+  <li class="leftbar"><a name="leftbar" class="active" href="/loginpage">登入</a></li>
+  {% endif %}
+</ul>
+<div style="margin-left:25%;padding:1px 16px;height:1000px;">
+    <hr/>
+    <i class="fa fa-envelope-square" style="color: #5A5A5E;font-size:24px" aria-hidden="true">   簡訊模組</i> 
+    <hr/>
+      <form method="post" action="/messageModule" onSubmit="return submitContent();">
+          <label>- 選擇名單標題： </label>
+          <select class="pretty-select" id="useModule" name="useModule">
+          </select>
+          <input type="button" style="border-color: rgb(216, 216, 216) rgb(209, 209, 209) rgb(186, 186, 186);border-style: solid;border-width: 1px;padding: 1px 7px 2px;" value="預覽" onclick="if(document.getElementById('useModule').value!='--'){if(document.getElementById('useModule').options[document.getElementById('useModule').selectedIndex].text.includes('AI篩選名單')){window.location.href='/output/AIexcel/'+document.getElementById('useModule').value}else{window.location.href='/output/filteredExl/'+document.getElementById('useModule').value};}">
+
+          <p></p>
+          <label id="FilterContent">- 受眾細項：</label>
+          <p></p>
+          <hr>
+          <label>* 目標網址(必填)：</label>
+            <input name="WebUrl" id="WebUrl" type="text" style="width: 60em" maxlength=100 required></input>
+          <p></p>
+          <label>廣告來源：</label>
+            <input type="text" value="AICRM-(uuid)"  disabled="disabled"></input>
+          <p></p>
+          <label>*廣告媒介(必填)：</label>
+            <input name="CampaignMedium" id="CampaignMedium" type="text" maxlength=100 required></input>
+            <label style="color: #AAAAAA">(建議: sms_頁面代碼_同名單序號+標題)</label>
+            +<input type="text" value="  -今天日期-顧客手機號碼"  disabled="disabled" style="width: 12em"></input>
+            
+          <p></p>
+          <label>*廣告活動名稱(必填)：</label>
+            <input name="CampaignName" id="CampaignName" type="text" maxlength=100 required></input>
+            <label style="color: #AAAAAA">(建議:2019/07/01_周年慶)</label>
+          <p></p>
+          <label>廣告字詞：</label>
+            <input name="CampaignTerm" id="CampaignTerm" type="text" maxlength=100></input>
+          <p></p>
+          <label>廣告內容：</label>
+            <input name="CampaignContent" id="CampaignContent" type="text" maxlength=100></input>
+            <label style="color: #AAAAAA">(建議:文案人員代碼)</label>
+          <p></p>
+
+          <label>* 簡訊內容(必填)：</label>
+          <p></p>
+          <label style="color: gray">目前共<input disabled  maxlength="3" size="3" value="0" id="counter">字(共可輸入43個字(utm網址27字))</label>
+          <p></p>
+            <textarea id="MessageContent" name="MessageContent"  style="resize:none;" rows="4" cols="50" onkeyup="textCounter(this,'counter',70-27);" required></textarea>
+          <p></p>
+          
+          <input type="checkbox" name="OnlyCell" value="True"> <label>只保留手機與姓名欄位</label>
+          
+         <p></p>
+        <i class="fa fa-check"></i> <input id="contact" type="button" value="預覽"> <input type="submit" value="儲存">
+        <!-- 預覽簡訊(隱藏視窗) -->
+        <div id="contactForm">
+          <h1>簡訊模組預覽</h1>
+          名單標題：
+          <input id="PreviewTitle" type="text" value="" style="width:20em"  disabled="disabled"></input>
+          <p></p>
+          簡訊內容：
+          <textarea id="PreviewContent" style="resize:none;" rows="6" cols="50" value="HeyHey" disabled="disabled"></textarea>
+        </div>
+
+        </form>
+  </body>
+
+    <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+    <script type="text/javascript">
+      
+      // 取得所有名單供發送選擇
+      var FilterFiles = ('{{FilterFiles|tojson|safe}}');
+          FilterFiles = FilterFiles.replace(/'/g, '"');
+          FilterFiles = FilterFiles.replace(/\bNaN\b/g, '"***NaN***"');
+          FilterFiles = JSON.parse(FilterFiles);
+      var useModule =  document.getElementById("useModule");
+      for(o in FilterFiles['FilterFiles']){     
+        var option = document.createElement("option");
+            option.text = FilterFiles['FilterFiles'][o]['FileFrom'] + ":" + FilterFiles['FilterFiles'][o]['FileTime_start']+"~"+ FilterFiles['FilterFiles'][o]['FileTime_end']+" ("+ FilterFiles['FilterFiles'][o]['Number']+"筆)";
+            option.value = FilterFiles['FilterFiles'][o]['FileName'];
+      useModule.appendChild(option);
+      }
+      for(o in FilterFiles['AIFiles']){     
+        var option = document.createElement("option");
+            option.text = "AI篩選名單:" + FilterFiles['AIFiles'][o]['CreateTime']+" ("+ FilterFiles['AIFiles'][o]['Number']+"筆)";
+            option.value = FilterFiles['AIFiles'][o]['FileName'];
+      useModule.appendChild(option);
+      }
+
+      document.getElementById("FilterContent").innerHTML= "名單用途：" + FilterFiles['FilterFiles'][0]["FilterContent"];
+         useModule.onchange = function() {
+          var usefor = useModule.options[document.getElementById('useModule').selectedIndex].text;
+            if(usefor.includes("AI篩選名單") ){
+              document.getElementById("FilterContent").innerHTML = "名單用途： AI篩選名單";
+            }else{
+              document.getElementById("FilterContent").innerHTML = "名單用途：" + FilterFiles['FilterFiles'][useModule.selectedIndex]["FilterContent"];
+            }
+            
+
+        }
+  // 計算簡訊字數
+ function textCounter(field,field2,maxlimit)
+        {
+         var countfield = document.getElementById(field2);
+         // if ( field.value.length > maxlimit ) {
+         //  field.value = field.value.substring( 0, maxlimit );
+         //  return false;
+         // } else {
+          countfield.value = field.value.length;
+         // }
+        }
+    // 限制簡訊字數
+      function submitContent(){
+        var countLength = document.getElementById('counter').value;
+         if(countLength<=43){
+                return true;
+           }
+           else{
+               alert("字數超過限制(43個字)！")
+               return false;
+           }
+
+      }
+   </script>
+   <script type="text/javascript">
+
+    $(function() {
+      //隱藏視窗的呼叫、關閉
+
+      // contact form animations
+      $('#contact').click(function() {
+        var sel = document.getElementById('useModule');
+        document.getElementById('PreviewTitle').value = sel.options[sel.selectedIndex].text;
+        document.getElementById('PreviewContent').value = document.getElementById('MessageContent').value + "http://tinyurl.com/curltest";
+        $('#contactForm').fadeToggle();
+      })
+      $(document).mouseup(function (e) {
+        var container = $("#contactForm");
+        if (!container.is(e.target) // if the target of the click isn't the container...
+            && container.has(e.target).length === 0) // ... nor a descendant of the container
+        {
+            container.fadeOut();
+        }
+      });
+        });
+    </script>
+</html>
+

@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html>
+  <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="./static/css/web.css">
+    <title>AICRM</title>
+  </head>
+<style>
+#myInput ,#myInput2 {
+  background-position: 10px 12px; /* Position the search icon */
+  background-repeat: no-repeat; /* Do not repeat the icon image */
+  font-size: 16px; /* Increase font-size */
+  padding: 5px 5px 5px 5px; /* Add some padding */
+  border: 1px solid #ddd; /* Add a grey border */
+  margin-bottom: 12px; /* Add some space below the input */
+}
+.ts.table {
+    width: 100%;
+    background: #fff;
+    margin: 1em 0em;
+    border: 1px solid #e9e9e9;
+    border-radius: .28571rem;
+    text-align: left;
+    color: #5a5a5a;
+    border-collapse: separate;
+    border-spacing: 0px;
+}
+.ts.table thead th {
+     cursor: auto;
+     background: #f7f7f7;
+     text-align: inherit;
+     color: #404040;
+     padding: .92857em .78571em;
+     vertical-align: inherit;
+     font-weight: 500;
+     border-bottom: 1px solid #e9e9e9;
+     border-left: none;
+}
+</style>
+<body>
+<ul class="topbar" style="margin: 0;padding: 0;">
+  <li class="topbar"><a class="active">AICRM</a></li>
+      {% if 'logged_in' in session and session['logged_in'] %}
+        <li class="topbar" style="float:right"><a href="/logout">Logout</a></li>
+<li class="topbar" style="float:right"><a>{{username}}</a></li>
+      {% else %}
+        <li class="topbar" style="float:right"><a onclick="ts('#login').modal('show')">Login</a></li>
+        <!-- <li class="topbar" style="float:right"><a onclick="ts('#singup').modal('show')">SingUp</a></li> -->
+      {% endif %}
+</ul>
+
+<ul class="leftbar" style="margin: 0;padding: 0;">
+  <li class="leftbar"><a href="/uploadExcel">上傳訂單資料</a></li>
+  <li class="leftbar"><a href="/newmodule">轉換模組</a></li>
+  <li class="leftbar"><a href="/index">篩選</a></li>
+  <li class="leftbar"><a href="/allModule">篩選結果名單</a></li>
+  <li class="leftbar"><a href="/messageModule">簡訊模組</a></li>
+  <li class="leftbar"><a class="active" href="/allMessageFile">簡訊名單</a></li>
+  <li class="leftbar"><a href="/AIfilter">AI篩選</a></li>
+  <li class="leftbar"><a href="/allAIfilter">AI篩選名單</a></li>
+</ul>
+
+   <div style="margin-left:25%;padding:1px 16px;height:1000px;" name="newmodule">
+      <hr/>
+      <i class="fa fa-address-book-o" style="color: #5A5A5E;font-size:24px"></i>  簡訊名單
+      <hr/>
+
+    <label style="background-color: #FFFF00;color: #888888;font-size: x-small;"> *可以點擊標題排序名單</label>
+<br>
+    <i class="fa fa-search" aria-hidden="true"></i><input type="text" id="myInput" onkeyup="myFunction()" placeholder="搜尋名單媒介">
+    <i class="fa fa-search" aria-hidden="true"></i><input type="text" id="myInput2" onkeyup="myFunction2()" placeholder="搜尋名單活動">
+<button id="contact" type="button" style="position: absolute;right: 5%;background-color: #4CAF50; /* Green */border: none;color: white;padding: 10px 15px;text-align: center;text-decoration: none;display: inline-block;font-size: 16px;" name="contact_GA">檢視GA結果</button>
+   <table class="ts celled selectable large table" style="word-break: break-all;" id="allModuleTable" RULES=ROWS>
+        <thead id="AllModuleTable">
+            <tr>
+            <th onclick="sortTable(0, 'Number')">No.</th>
+            <th onclick="sortTable(1, 'Str')">創建時間</th>
+            <th onclick="sortTable(2, 'Str')">名單狀態</th>
+
+            <th onclick="sortTable(3, 'Str')">名單標題</th>
+            <th onclick="sortTable(4, 'Str')">媒介</th>
+            <th onclick="sortTable(5, 'Str')">活動</th>
+            <th onclick="sortTable(6, 'Number')">不重複名單筆數</th>
+            <th>名單預覽</th>
+            <th>寄送狀態</th>
+            <th>測試發送</th>
+            <th>名單刪除</th>
+            </tr>
+        </thead>
+        <tbody>
+
+        </tbody>
+    </table>
+
+
+<!-- 發訊測試簡訊詢問(隱藏視窗) -->
+<div id="contactForm">
+    <input  type="hidden" value="" id="testID" name="testID" ><p></p>
+    <p>輸入測試手機號碼(可使用,分隔多個號碼ex:0912345678,0923456789)：</p>
+    <textarea id="phone" style="resize:none;border:1px #AAAAAA solid;" rows="6" cols="50" value="" ></textarea>
+    <p></p>
+    <input type="button" value="送出" style="border:1px #AAAAAA solid;" onclick = "sendTestMessage()" required/>
+  </div>
+
+  <!-- 發訊簡訊詢問(選擇發送時程)(隱藏視窗) -->
+  <div id="contactForm2">
+    <input  type="hidden" value="" id="batchID" name="batchID" ><p></p>
+    <h3>批次發送：</h3>
+<small>(不指定則即時發送簡訊)</small>
+<p></p>
+    <input name="aftertime" id="aftertime" type="text" maxlength=6
+             onkeypress="var k=event.keyCode; return k>=48&&k<=57"
+             onpaste="return !clipboardData.getData('text').match(/\D/)"
+             ondragenter="return false"
+             style="ime-mode:Disabled;width: 10em" placeholder="輸入純數字" ></input>
+    個小時後，
+    <p></p>
+    每間隔
+    <input name="dlvtime" id="dlvtime" type="text" maxlength=6
+             onkeypress="var k=event.keyCode; return k>=48&&k<=57"
+             onpaste="return !clipboardData.getData('text').match(/\D/)"
+             ondragenter="return false"
+             style="ime-mode:Disabled;width: 10em" placeholder="輸入純數字" ></input>
+    小時發送，
+    <p></p>
+    每次發送
+    <input name="batch" id="batch" type="text" maxlength=6
+             onkeypress="var k=event.keyCode; return k>=48&&k<=57"
+             onpaste="return !clipboardData.getData('text').match(/\D/)"
+             ondragenter="return false"
+             style="ime-mode:Disabled;width: 6em" placeholder="輸入純數字" ></input>
+    筆名單。
+    <p></p>
+    <hr>
+    <h3>發送名單範圍：</h3>
+    <small>(不指定則發送整筆名單)</small>
+    <p></p>
+    <input name="start_message" id="start_message" type="text" maxlength=6
+             onkeypress="var k=event.keyCode; return k>=48&&k<=57"
+             onpaste="return !clipboardData.getData('text').match(/\D/)"
+             ondragenter="return false"
+             style="ime-mode:Disabled;width: 10em" placeholder="輸入純數字" ></input>
+    到第
+    <p></p>
+    <input name="end_message" id="end_message" type="text" maxlength=6
+             onkeypress="var k=event.keyCode; return k>=48&&k<=57"
+             onpaste="return !clipboardData.getData('text').match(/\D/)"
+             ondragenter="return false"
+             style="ime-mode:Disabled;width: 10em" placeholder="輸入純數字" ></input>
+    筆簡訊。
+    <p></p>
+    <input type="button" value="送出" style="border:1px #AAAAAA solid;" onclick = "sendMessage()" required/>
+
+  </div>
+  <!-- GA成效與簡訊狀態表格(隱藏視窗) -->
+    <div id="contactForm_GA" style="overflow:scroll;height:600px;width:750px">
+    <p></p>
+    <button type="button" style="display: block;" onclick="downloadGA()" ><i class="fa fa-plus"></i>下載表格</button>
+      <table border="1" id="GaTable">
+      　<tr>
+      　<td colspan="7">簡訊</td>
+      　<td colspan="3">GA</td>
+      　</tr>
+      　<tr>
+      　<td>發送時間</td>
+        <td>已送達</td>
+        <td>預約中</td>
+        <td>逾時未送達</td>
+      　<td>其他錯誤</td>
+        <td>總計</td>
+        <td>預覽</td>
+        <td>點擊次數</td>
+        <td>交易次數</td>
+        <td>收益</td>
+      　</tr>
+
+      </table>
+  </div>
+
+</div>
+  </body>
+
+    <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+    <script type="text/javascript">
+      function downloadGA(){
+        var element = document.getElementById('GaTable');
+        
+        if(element){
+            var html = element.outerHTML;       
+            var data = { html: html }; 
+            var json = JSON.stringify(data);
+            $.post( "/GAtable", {
+                javascript_data: json 
+            });
+            
+        location.replace('/GAtable');
+        }
+
+      }
+
+        function deleteFile(name){
+
+            getData("/getAPI/deleteFile/MessageFile-" + name ,function(responseText) {
+              window.location.reload();
+            });
+          }
+          // 發送簡訊
+          function sendMessage(){
+            var r = confirm("簡訊一旦寄出不可收回，確定寄出簡訊？");
+            if (r == true) {
+              var batchID = document.getElementById("batchID").value;
+              var dlvtime = document.getElementById("dlvtime").value;
+              var batch = document.getElementById("batch").value;
+              var aftertime = document.getElementById("aftertime").value;
+              var start_message = document.getElementById("start_message").value;
+              var end_message = document.getElementById("end_message").value;
+              var store = 0 ;
+              var container = $("#contactForm");
+              if(aftertime==""){aftertime =0;}
+              if(start_message!="" & end_message!=""){
+                if(start_message>end_message){
+                store = start_message;
+                start_message = end_message;
+                end_message = store;
+               }else{};
+             }else if(start_message=="" & end_message== ""){
+                start_message= 'No';
+                end_message = 'No';
+              }else{
+                alert("請發送名單範圍[起始]與[截止]欄位都輸入數字，或欄位皆留空。");
+                return;
+              }
+
+              // 一次全部發送
+              if (batch=="" & dlvtime== ""){
+                getData("/sendMessage/" + batchID + "/" + aftertime + "/No/No/" + start_message+ "/" + end_message ,function(responseText) {
+                  if(responseText =='numberLarge'){
+                      alert("簡訊範圍超過名單大小，請重新輸入");
+                    }
+
+                    container.hide();
+                    alert("已發送簡訊");
+                    window.location.reload();
+                  });
+              }else if(batch=="" || dlvtime== ""){
+                alert("請[小時]與[筆數]欄位都輸入數字，或[小時]與[筆數]欄位皆留空。");
+                return;
+              }else{ // 分梯發送
+                getData("/sendMessage/" + batchID + "/" + aftertime + "/" + dlvtime+ "/" + batch  + "/" + start_message+ "/" + end_message ,function(responseText) {
+                  if(responseText =='numberLarge'){
+                      alert("簡訊範圍超過名單大小，請重新輸入");
+                    }
+                    container.hide();
+                    alert("已批次發送簡訊");
+                    window.location.reload();
+                  });
+                }
+              }
+
+          }
+
+          // 發送測試簡訊
+          function sendTestMessage(){
+            var phones = document.getElementById("phone").value;
+            var testID = document.getElementById("testID").value;
+            if(!phones){
+              alert('請輸入測試手機號碼。');
+            }else{
+              var r = confirm("簡訊一旦寄出不可收回，確定寄出簡訊？");
+              if (r == true) {
+                getData("/sendTestMessage/" + testID + "/" + phones,function(responseText) {
+                    window.location.reload();
+                  });
+                }
+            }
+          }
+
+        // 從python GET到DB取得所有簡訊名單並逐行建立table元件
+        function appendCloum(CreateTime , Status,Title, Medium, Campaign, number, url, sendButton, testSend, deleteButton){
+          var tb = document.getElementById("AllModuleTable");
+          var rows = document.getElementById("allModuleTable").rows.length;
+          var trNode = document.createElement("tr");
+
+          var thList = [rows, CreateTime ,Status, Title, Medium, Campaign, number, url, sendButton, testSend,deleteButton];
+          for(i in thList){
+            var thNode = document.createElement("td");
+                if((i==7 || i==8 || i==9) & Status.includes("創建中...")){
+                  thNode.append("等待創建完成");
+                }else{
+                  thNode.append(thList[i]);
+                }
+            trNode.append(thNode)
+          }
+          tb.appendChild(trNode)
+        }
+
+          var MessageFiles = ('{{MessageFiles|tojson|safe}}');
+                MessageFiles.replace(/'/g, '"');
+                MessageFiles = JSON.parse(MessageFiles);
+          for(o in MessageFiles){
+            var aNode = document.createElement("a");
+                aNode.href="/output/messageExl/"+ MessageFiles[o]["FileName"];
+            aNode.append("預覽名單");
+
+            var testSend = document.createElement("button");
+            testSend.setAttribute("style", "border-color: rgb(216, 216, 216) rgb(209, 209, 209) rgb(186, 186, 186);border-style: solid;border-width: 1px;padding: 1px 7px 2px;");
+                testSend.append("測試寄送");
+                testSend.name = "contact";
+                testSend.id = MessageFiles[o]["FileName"];
+            if(MessageFiles[o]['Status']=="創建中..."){
+              var sendButton = document.createElement("a");
+              sendButton.append("等待創建完成");
+            }
+            else if(MessageFiles[o]['SendStatus']=="尚未寄送"){
+              var sendButton = document.createElement("button");
+                sendButton.setAttribute("style", "border-color: rgb(216, 216, 216) rgb(209, 209, 209) rgb(186, 186, 186);border-style: solid;border-width: 1px;padding: 1px 7px 2px;");
+                sendButton.append("送出名單");
+                sendButton.id = MessageFiles[o]["FileName"];
+                sendButton.name = "contact2";
+              }else{
+                var sendButton = document.createElement("button");
+                sendButton.setAttribute("style", "border-color: rgb(216, 216, 216) rgb(209, 209, 209) rgb(186, 186, 186);border-style: solid;border-width: 1px;padding: 1px 7px 2px;");
+                // 打開再次寄送功能
+                // sendButton.append(MessageFiles[o]['SendStatus'] + "|再次寄送");
+                sendButton.append("已發送");
+                sendButton.id = MessageFiles[o]["FileName"];
+                // sendButton.name = "contact2";
+                // sendButton.onclick = function () { sendMessage(this.id); };
+
+              }
+
+            var deleteButton = document.createElement("button");
+                deleteButton.setAttribute("style", "border-color: rgb(216, 216, 216) rgb(209, 209, 209) rgb(186, 186, 186);border-style: solid;border-width: 1px;padding: 1px 7px 2px;");
+                deleteButton.id = MessageFiles[o]["FileName"];
+                deleteButton.append("刪除");
+                deleteButton.onclick = function () { deleteFile(this.id); };
+            appendCloum(MessageFiles[o]["CreateTime"],
+              MessageFiles[o]["Status"], MessageFiles[o]["FileFrom"]+":"+MessageFiles[o]["FileTime_start"]+"~"+MessageFiles[o]["FileTime_end"], MessageFiles[o]["Medium"], MessageFiles[o]["Campaign"], MessageFiles[o]["Number"], aNode, sendButton, testSend, deleteButton);
+          }
+
+    function getData(url, cb)
+     {
+       var xmlhttp;
+       if (window.XMLHttpRequest){
+           xmlhttp=new XMLHttpRequest();}
+       else{
+           xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");}
+
+        xmlhttp.onreadystatechange=function(){
+            if (xmlhttp.readyState==4 && xmlhttp.status==200){
+                if( typeof cb === 'function' )
+                    cb(xmlhttp.responseText);
+            }
+        }
+
+       xmlhttp.open("GET", url, true);
+       xmlhttp.send();
+
+    }
+
+
+
+      var MessageResult = ('{{MessageResult|tojson|safe}}');
+      MessageResult.replace(/'/g, '"');
+      MessageResult = JSON.parse(MessageResult);
+
+      // 從python GET到DB取得簡訊發送狀態、GA成效並逐行建立GaTable元件
+      function getMessageResult()
+         {
+          var GaTable = document.getElementById('GaTable');
+
+          if(MessageResult.length>0){
+            for(o in MessageResult){
+            var TRnode = document.createElement("tr");
+            var TDnode_time = document.createElement("td");
+            var Textnode_time = document.createTextNode(MessageResult[o]["SendTime"]);
+
+            var TDnode_Status_finish = document.createElement("td");
+            var Textnode_Status_finish = document.createTextNode(MessageResult[o]["MessageStatus_finish"]);
+            var TDnode_Status_reservation = document.createElement("td");
+            var Textnode_Status_reservation = document.createTextNode(MessageResult[o]["MessageStatus_reservation"]);
+            var TDnode_Status_timeout = document.createElement("td");
+            var Textnode_Status_timeout = document.createTextNode(MessageResult[o]["MessageStatus_timeout"]);
+            var TDnode_Status_error = document.createElement("td");
+            var Textnode_Status_error = document.createTextNode(MessageResult[o]["MessageStatus_error"]);
+
+            var TDnode_Preview = document.createElement("td");
+            var aNode = document.createElement("a");
+                aNode.href="/output/messageExl/"+ MessageResult[o]["FileName"];
+            aNode.append("預覽名單");
+
+            var TDnode_number = document.createElement("td");
+            var Textnode_number = document.createTextNode(MessageResult[o]["Number"]);
+            var TDnode_GAClick = document.createElement("td");
+            var Textnode_GAClick = document.createTextNode(MessageResult[o]["GA_Click"]);
+            var TDnode_GATransactionTimes = document.createElement("td");
+            var Textnode_GATransactionTimes = document.createTextNode(MessageResult[o]["GA_TransactionTimes"]);
+            var TDnode_GARevenue = document.createElement("td");
+            var Textnode_GARevenue = document.createTextNode(MessageResult[o]["GA_Revenue"]);
+
+            GaTable.appendChild(TRnode).appendChild(TDnode_time).appendChild(Textnode_time).parentNode.parentNode.appendChild(TDnode_Status_finish).appendChild(Textnode_Status_finish).parentNode.parentNode.appendChild(TDnode_Status_reservation).appendChild(Textnode_Status_reservation).parentNode. parentNode.appendChild(TDnode_Status_timeout).appendChild(Textnode_Status_timeout).parentNode.parentNode.appendChild(TDnode_Status_error).appendChild(Textnode_Status_error).parentNode.parentNode.appendChild(TDnode_number).appendChild(Textnode_number).parentNode.parentNode.appendChild(TDnode_Preview).appendChild(aNode).parentNode.parentNode.appendChild(TDnode_GAClick).appendChild(Textnode_GAClick).parentNode. parentNode.appendChild(TDnode_GATransactionTimes).appendChild(Textnode_GATransactionTimes).parentNode.parentNode.appendChild(TDnode_GARevenue).appendChild(Textnode_GARevenue);
+          }
+          }
+
+        }
+        getMessageResult()
+   </script>
+   <script>
+// 點擊tabel 標題可以依據點擊條件遞增/遞減排序表格
+function sortTable(n, sortType) {
+  var table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;
+  table = document.getElementById("allModuleTable");
+  switching = true;
+  // Set the sorting direction to ascending:
+  dir = "asc";
+  /* Make a loop that will continue until
+  no switching has been done: */
+  while (switching) {
+    // Start by saying: no switching is done:
+    switching = false;
+    rows = table.rows;
+    /* Loop through all table rows (except the
+    first, which contains table headers): */
+    for (i = 1; i < (rows.length - 1); i++) {
+      // Start by saying there should be no switching:
+      shouldSwitch = false;
+      /* Get the two elements you want to compare,
+      one from current row and one from the next: */
+      x = rows[i].getElementsByTagName("TD")[n];
+      y = rows[i + 1].getElementsByTagName("TD")[n];
+      /* Check if the two rows should switch place,
+      based on the direction, asc or desc: */
+      if (dir == "asc") {
+        if(sortType == "Number"){
+          if (Number(x.innerHTML) > Number(y.innerHTML)) {
+            shouldSwitch = true;
+            break;
+        }
+        }else{
+            if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {
+            // If so, mark as a switch and break the loop:
+            shouldSwitch = true;
+            break;
+          }
+        }
+
+      } else if (dir == "desc") {
+        if(sortType == "Number"){
+          if (Number(x.innerHTML) < Number(y.innerHTML)) {
+            shouldSwitch = true;
+            break;
+        }}else{
+          if (x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) {
+            // If so, mark as a switch and break the loop:
+            shouldSwitch = true;
+            break;
+          }
+        }
+      }
+    }
+    if (shouldSwitch) {
+      /* If a switch has been marked, make the switch
+      and mark that a switch has been done: */
+      rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+      switching = true;
+      // Each time a switch is done, increase this count by 1:
+      switchcount ++;
+    } else {
+      /* If no switching has been done AND the direction is "asc",
+      set the direction to "desc" and run the while loop again. */
+      if (switchcount == 0 && dir == "asc") {
+        dir = "desc";
+        switching = true;
+      }
+    }
+  }
+}
+// 搜尋名單by媒介
+function myFunction() {
+  // Declare variables
+  var input, filter, table, tr, td, i, txtValue;
+  input = document.getElementById("myInput");
+  filter = input.value.toUpperCase();
+  table = document.getElementById("allModuleTable");
+  tr = table.getElementsByTagName("tr");
+
+  // Loop through all table rows, and hide those who don't match the search query
+  for (i = 0; i < tr.length; i++) {
+    td = tr[i].getElementsByTagName("td")[4];
+    if (td) {
+      txtValue = td.textContent || td.innerText;
+      if (txtValue.toUpperCase().indexOf(filter) > -1) {
+        tr[i].style.display = "";
+      } else {
+        tr[i].style.display = "none";
+      }
+    }
+  }
+}
+
+// 搜尋名單by活動
+function myFunction2() {
+  // Declare variables
+  var input, filter, table, tr, td, i, txtValue;
+  input = document.getElementById("myInput2");
+  filter = input.value.toUpperCase();
+  table = document.getElementById("allModuleTable");
+  tr = table.getElementsByTagName("tr");
+
+  // Loop through all table rows, and hide those who don't match the search query
+  for (i = 0; i < tr.length; i++) {
+    td = tr[i].getElementsByTagName("td")[5];
+    if (td) {
+      txtValue = td.textContent || td.innerText;
+      if (txtValue.toUpperCase().indexOf(filter) > -1) {
+        tr[i].style.display = "";
+      } else {
+        tr[i].style.display = "none";
+      }
+    }
+  }
+}
+</script>
+
+<script type="text/javascript">
+
+    $(function() {
+
+      //隱藏視窗的呼叫、關閉
+      $("button[name=contact]").each(function(index) {
+          $(this).on("click", function(){
+              var testID = this.id;
+              document.getElementById('testID').value = testID;
+              $('#contactForm').show();
+          });
+      });
+      $("button[name=contact2]").each(function(index) {
+          $(this).on("click", function(){
+              var batchID = this.id;
+              document.getElementById('batchID').value = batchID;
+
+              $('#contactForm2').show();
+          });
+      });
+
+      $("button[name=contact_GA]").each(function(index) {
+          $(this).on("click", function(){
+              // var GAID = this.id;
+              // document.getElementById('batchID').value = GAID;
+              $('#contactForm_GA').show();
+          });
+      });
+
+      $(document).mouseup(function (e) {
+        var container = $("#contactForm");
+        if (!container.is(e.target) // if the target of the click isn't the container...
+            && container.has(e.target).length === 0) // ... nor a descendant of the container
+        {
+            container.hide();
+        }
+      });
+      $(document).mouseup(function (e) {
+        var container = $("#contactForm2");
+        if (!container.is(e.target) // if the target of the click isn't the container...
+            && container.has(e.target).length === 0) // ... nor a descendant of the container
+        {
+            container.hide();
+        }
+      });
+
+      $(document).mouseup(function (e) {
+        var container = $("#contactForm_GA");
+        if (!container.is(e.target) // if the target of the click isn't the container...
+            && container.has(e.target).length === 0) // ... nor a descendant of the container
+        {
+            container.hide();
+        }
+      });
+        });
+    </script>
+</html>

@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+  <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="./static/css/web.css">
+    <title>AICRM</title>
+  </head>
+<style>
+#myInput ,#myInput2 {
+  background-position: 10px 12px; /* Position the search icon */
+  background-repeat: no-repeat; /* Do not repeat the icon image */
+  font-size: 16px; /* Increase font-size */
+  padding: 5px 5px 5px 5px; /* Add some padding */
+  border: 1px solid #ddd; /* Add a grey border */
+  margin-bottom: 12px; /* Add some space below the input */
+}
+.ts.table {
+    width: 100%;
+    background: #fff;
+    margin: 1em 0em;
+    border: 1px solid #e9e9e9;
+    border-radius: .28571rem;
+    text-align: left;
+    color: #5a5a5a;
+    border-collapse: separate;
+    border-spacing: 0px;
+}
+.ts.table thead th {
+     cursor: auto; 
+     background: #f7f7f7; 
+     text-align: inherit; 
+     color: #404040; 
+     padding: .92857em .78571em; 
+     vertical-align: inherit; 
+     font-weight: 500; 
+     border-bottom: 1px solid #e9e9e9; 
+     border-left: none; 
+}
+input, label, select, button, textarea {
+     margin: 0; 
+     border: 0; 
+     padding: 0; 
+     display: inline-block; 
+     vertical-align: middle; 
+     background: none; 
+     line-height: 1; 
+     font-size: 13px; 
+}
+</style>
+<body>
+<ul class="topbar" style="margin: 0;padding: 0;">
+  <li class="topbar"><a class="active">AICRM</a></li>
+      {% if 'logged_in' in session and session['logged_in'] %}
+        <li class="topbar" style="float:right"><a href="/logout">Logout</a></li>
+      {% else %}
+        <li class="topbar" style="float:right"><a onclick="ts('#login').modal('show')">Login</a></li>
+        <!-- <li class="topbar" style="float:right"><a onclick="ts('#singup').modal('show')">SingUp</a></li> -->
+      {% endif %}
+</ul>
+
+<ul class="leftbar" style="margin: 0;padding: 0;">
+  <li class="leftbar"><a href="/uploadExcel">上傳訂單資料</a></li>
+  <li class="leftbar"><a href="/newmodule">轉換模組</a></li>
+  <li class="leftbar"><a href="/index">篩選</a></li>
+  <li class="leftbar"><a href="/allModule">篩選結果名單</a></li>
+  <li class="leftbar"><a href="/messageModule">簡訊模組</a></li>
+  <li class="leftbar"><a href="/allMessageFile">簡訊名單</a></li>
+  <li class="leftbar"><a href="/AIfilter">AI篩選</a></li>  
+  <li class="leftbar"><a class="active" href="/allAIfilter">AI篩選名單</a></li>
+  
+</ul>
+
+   <div style="margin-left:25%;padding:1px 16px;height:1000px;" name="newmodule">
+      <hr/>
+      <i class="fa fa-address-book-o" style="color: #5A5A5E;font-size:24px"></i>  簡訊名單
+      <hr/>
+
+    <label style="background-color: #FFFF00;color: #888888;font-size: x-small;"> *可以點擊標題排序名單</label>
+    <br> 
+    
+    <table class="ts celled selectable large table" style="word-break: break-all;" id="allModuleTable" RULES=ROWS>
+        <thead id="AllModuleTable">
+            <tr>
+            <th onclick="sortTable(0, 'Number')">No.</th>
+            <th onclick="sortTable(1, 'Str')">創建時間</th>
+            <th onclick="sortTable(2, 'Number')">不重複名單筆數</th>
+            <th>名單預覽</th>
+            <th>名單刪除</th>
+            </tr>
+        </thead>
+        <tbody>
+
+        </tbody>
+    </table>
+
+</div>
+  </body>
+
+    <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+    <script type="text/javascript">
+        function deleteFile(name){
+            getData("/getAPI/deleteFile/AIfilterFile-" + name ,function(responseText) {
+              window.location.reload();
+            });
+          }
+        // 從python GET到DB取得所有AI篩選名單並逐行建立table元件
+        function appendCloum(CreateTime , number, url, deleteButton){
+          var tb = document.getElementById("AllModuleTable");
+          var rows = document.getElementById("allModuleTable").rows.length;
+          var trNode = document.createElement("tr");
+
+          var thList = [rows, CreateTime, number, url, deleteButton];
+          for(i in thList){
+            var thNode = document.createElement("td");
+
+            thNode.append(thList[i]);
+            trNode.append(thNode)
+          }
+          tb.appendChild(trNode)
+
+        }
+          
+          var AIfilterFiles = ('{{AIfilterFiles|tojson|safe}}');
+                AIfilterFiles.replace(/'/g, '"');
+                AIfilterFiles = JSON.parse(AIfilterFiles);
+          for(o in AIfilterFiles){     
+            var aNode = document.createElement("a");
+                aNode.href="/output/AIexcel/"+ AIfilterFiles[o]["FileName"];
+            aNode.append("預覽名單");
+            var deleteButton = document.createElement("button");
+                deleteButton.setAttribute("style", "border-color: rgb(216, 216, 216) rgb(209, 209, 209) rgb(186, 186, 186);border-style: solid;border-width: 1px;padding: 1px 7px 2px;");
+                deleteButton.id = AIfilterFiles[o]["FileName"];
+                deleteButton.append("刪除");
+                deleteButton.onclick = function () { deleteFile(this.id); };
+            appendCloum(AIfilterFiles[o]["CreateTime"], AIfilterFiles[o]["Number"], aNode, deleteButton);
+          }
+
+    function getData(url, cb)
+     {
+       var xmlhttp;
+       if (window.XMLHttpRequest){
+           xmlhttp=new XMLHttpRequest();}
+       else{
+           xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");}
+
+        xmlhttp.onreadystatechange=function(){
+            if (xmlhttp.readyState==4 && xmlhttp.status==200){
+                if( typeof cb === 'function' )
+                    cb(xmlhttp.responseText);
+            }
+        }
+
+       xmlhttp.open("GET", url, true);
+       xmlhttp.send();
+
+    }
+   </script>
+   <script>
+
+// 點擊tabel 標題可以依據點擊條件遞增/遞減排序表格
+function sortTable(n, sortType) {
+  var table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;
+  table = document.getElementById("allModuleTable");
+  switching = true;
+  // Set the sorting direction to ascending:
+  dir = "asc"; 
+  /* Make a loop that will continue until
+  no switching has been done: */
+  while (switching) {
+    // Start by saying: no switching is done:
+    switching = false;
+    rows = table.rows;
+    /* Loop through all table rows (except the
+    first, which contains table headers): */
+    for (i = 1; i < (rows.length - 1); i++) {
+      // Start by saying there should be no switching:
+      shouldSwitch = false;
+      /* Get the two elements you want to compare,
+      one from current row and one from the next: */
+      x = rows[i].getElementsByTagName("TD")[n];
+      y = rows[i + 1].getElementsByTagName("TD")[n];
+      /* Check if the two rows should switch place,
+      based on the direction, asc or desc: */
+      if (dir == "asc") {
+        if(sortType == "Number"){
+          if (Number(x.innerHTML) > Number(y.innerHTML)) {
+            shouldSwitch = true;
+            break;
+        }
+        }else{
+            if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {
+            // If so, mark as a switch and break the loop:
+            shouldSwitch = true;
+            break;
+          }
+        }
+        
+      } else if (dir == "desc") {
+        if(sortType == "Number"){
+          if (Number(x.innerHTML) < Number(y.innerHTML)) {
+            shouldSwitch = true;
+            break;
+        }}else{
+          if (x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) {
+            // If so, mark as a switch and break the loop:
+            shouldSwitch = true;
+            break;
+          }
+        }
+      }
+    }
+    if (shouldSwitch) {
+      /* If a switch has been marked, make the switch
+      and mark that a switch has been done: */
+      rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+      switching = true;
+      // Each time a switch is done, increase this count by 1:
+      switchcount ++; 
+    } else {
+      /* If no switching has been done AND the direction is "asc",
+      set the direction to "desc" and run the while loop again. */
+      if (switchcount == 0 && dir == "asc") {
+        dir = "desc";
+        switching = true;
+      }
+    }
+  }
+}
+
+</script>
+</html>
+

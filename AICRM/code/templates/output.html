@@ -1,0 +1,57 @@
+
+<style>
+@import "https://fonts.googleapis.com/css?family=Raleway";
+* { box-sizing: border-box; }
+
+h1{ margin: 0; }
+
+
+button:hover { background: #666; }
+button:active { background: #444; }
+
+
+#contactForm { 
+  display: none;
+
+  border: 6px solid #AAAAAA; 
+  padding: 2em;
+  width: 400px;
+  text-align: center;
+  background: #fff;
+  position: fixed;
+  top:50%;
+  left:50%;
+  transform: translate(-50%,-50%);
+  -webkit-transform: translate(-50%,-50%)
+  background-color:#DDDDDD;
+}
+
+input, textarea { 
+  margin: .8em auto;
+  font-family: inherit; 
+  text-transform: inherit; 
+  font-size: inherit;
+  
+  display: block; 
+  width: 280px; 
+  padding: .4em;
+}
+textarea { height: 80px; resize: none; }
+
+.formBtn { 
+  width: 140px;
+  background: #008800;
+  color: #fff;
+  font-weight: 100;
+  font-size: 1.2em;
+  border: none;
+  height: 35px;
+}
+</style>
+
+<button type="button" style="display: block;" onclick="window.location.href='/download/{{type}}/{{fname}}'" ><i class="fa fa-plus"></i>下載</button>
+<button type="button" style="display: block;" onclick="window.location.href='/downloadOnlyCell/{{type}}/{{fname}}'" ><i class="fa fa-plus"></i>下載純手機號碼檔案</button>
+<p></p>
+<button type="button" style="display: inline" onclick="window.location.href='/index'"><i class="fa fa-plus"></i>重新選擇</button>
+<label>超出100行之資料將預覽前後各50筆，可下載檔案查看完整資料。</label><br>
+{{data | safe}}

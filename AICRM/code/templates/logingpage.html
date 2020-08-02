@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+  <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="stylesheet" href="./static/css/tocas.css">
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/tocas-ui/2.3.3/tocas.js"></script>
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+      <link rel="stylesheet" href="./static/css/web.css">
+      
+      <title>AICRM</title>
+  </head>
+
+  <body>
+<ul class="topbar" style="margin: 0;padding: 0;">
+  <li class="topbar"><a class="active">AICRM</a></li>
+    <!-- <li class="topbar" style="float:right"><a onclick="ts('#signup').modal('show')">SignUp</a></li> -->
+
+</ul>
+
+<ul class="leftbar" style="margin: 0;padding: 0;">
+{% if 'logged_in' in session and session['logged_in'] %}
+  <li class="leftbar"><a href="/uploadExcel">上傳訂單資料</a></li>
+  <li class="leftbar"><a href="/newmodule">轉換模組</a></li>
+  <li class="leftbar"><a href="/index">篩選</a></li>
+  <li class="leftbar"><a href="/allModule">篩選結果名單</a></li>
+  <li class="leftbar"><a href="/messageModule">簡訊模組</a></li>
+   {% else %}
+  <li class="leftbar"><a name="leftbar" class="active" href="/loginpage">登入</a></li>
+  {% endif %}
+</ul>
+<div style="margin-left:25%;padding:1px 16px;height:1000px;">
+          <div >
+                <hr/>
+                <div class="header" style="font-size: 20px;">
+                    登入
+                </div>
+                <hr/>
+                <div class="content">
+                    <form class="ts form" action="/login" method="POST">
+                        <div class="field">
+                            <label>帳號：</label><input type="text" name="account">
+                        </div>
+                        <div class="field">
+                            <label>密碼：</label><input type="password" name="password">
+                        </div>
+                        <button class="ts positive button" type="submit">登入</button>
+                    </form>
+                </div>
+           </div>
+        <!-- SingUp -->
+        <div class="ts modals dimmer">
+            <dialog id="signup" class="ts closable mini modal" open>
+                <i class="ts close icon"></i>
+                <div class="header">
+                    註冊(*帳號為手機號碼)
+                </div>
+                <div class="content">
+                    <form class="ts form" action="/signup" method="POST">
+                        <div class="field">
+                            <label>帳號：</label><input type="text" name="account">
+                        </div>
+                        <div class="field">
+                            <label>密碼：</label><input type="password" name="password">
+                        </div>
+                        <button class="ts positive button" type="submit">註冊</button>
+                    </form>
+                </div>
+            </dialog>
+        </div>
+</div>
+  </body>
+</html>
