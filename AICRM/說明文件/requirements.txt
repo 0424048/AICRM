@@ -5,7 +5,7 @@ pyshorteners==0.6.1
 numpy==1.16.1
 SQLAlchemy==1.2.18
 pandas==0.24.1
-requests==1.2.3
+requests==2.20.0
 SQLAlchemy_Utils==0.33.11
 Flask==1.0.2
 openpyxl==2.6.0
