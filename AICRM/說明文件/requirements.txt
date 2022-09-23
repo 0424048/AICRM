@@ -12,4 +12,4 @@ openpyxl==2.6.0
 google_api_python_client==1.7.11
 chardet==3.0.4
 python_dateutil==2.8.0
-protobuf==3.9.1
+protobuf==3.18.3
